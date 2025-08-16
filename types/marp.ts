@@ -2,11 +2,11 @@ export type RenderOptions = {
   themeName?: string
   themeCSS?: string
   extraCSS?: string
-  withPrintCSS: boolean
+  withPrintCSS?: boolean
   watermarkText?: string
 }
 
 export type RenderResult = {
-  html: string
+  htmlDocument: string
   slideCount: number
 }

@@ -42,7 +42,7 @@
 - 受け入れ基準: Checkout→Success→Webhookで`active`、解約で即ロック（制作書 19.8）
 
 ### M5: AI アシスト
-- [ ] **`lib/ai.ts`**: OpenAI 抽象（プロバイダ差し替え可能）
+- [ ] **`lib/llm.ts`**: OpenAI 抽象（プロバイダ差し替え可能）
 - [ ] **`app/api/ai/assist/route.ts`**: アウトライン/要約/ノート生成 API
 - [ ] **Toolbar 実装**: 生成・挿入・差し替え UI、クォータ管理（無料枠制限）
 - 受け入れ基準: 長文貼り付けから骨子/要約/ノートを3クリック以内で生成
