@@ -1,37 +1,11 @@
-"use client";
-import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { auth, signIn, signOut } from "@/lib/auth";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { SignInWithGithubButton, SignOutButton } from "@/components/login-button.client";
 
 export default async function LoginButton() {
-  const session = await auth();
-
-  return (
-    <>
-      {!session && (
-        <form
-          action={async () => {
-            "use server";
-            await signIn("GitHub");
-          }}
-          >
-          <Button className="my-5 rounded bg-blue-500 px-4 py-2 font-bold text-white hover:bg-blue-700">
-            Sign in with GitHub
-          </Button>
-        </form>
-      )}
-      {session && (
-        <form
-          action={async () => {
-            "use server";
-            await signOut();
-          }}
-          >
-          <Button className="my-5 rounded bg-blue-500 px-4 py-2 font-bold text-white hover:bg-blue-700">
-            Sign out
-          </Button>
-      </form>
-      )}
-    </>
-  )
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return <SignInWithGithubButton />;
+  }
+  return <SignOutButton />;
 }
