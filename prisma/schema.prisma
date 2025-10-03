@@ -1,0 +1,156 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  user
+  admin
+}
+
+enum Visibility {
+  public
+  private
+  unlisted
+}
+
+enum GetStatus {
+  queued
+  running
+  successed
+  failed
+}
+
+enum VersionStatus {
+  draft
+  generated
+  edited
+}
+
+enum ExportType {
+  pdf
+  png
+  html
+  md
+}
+
+
+model User {
+  id String @id @db.Uuid
+  username String? @unique
+  displayName String?
+  avatarUrl String?
+  role UserRole @default(user)
+  createdAt DateTime @default(now())
+  updatedAt Datetime @updatedAt
+
+  projects Project[]
+  versions Version[] @relation("VersionCreatedBy")
+  generations Generation[] @relation("GenerationCreatedBy")
+  exports Export[] @relation("ExportCreatedBy")
+}
+
+model Project {
+  id String @id @db.Uuid
+  title String
+  description String?
+  visibility Visibility @default(private)
+  currentVersionId String? @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updateAt
+
+  owner Profile @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  versions Version[]
+  tags ProjectTag[]
+
+  currentVersion Version? @relation("ProjectCurrentVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
+
+  @@index([ownerId])
+  @@index([visibility])
+}
+
+model Version {
+  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId    String        @db.Uuid
+  versionNo    Int
+  status       VersionStatus @default(generated)
+  llmModel     String?
+  promptSnapshot String?
+  marpMd       String
+  htmlCache    String?
+  createdById  String        @db.Uuid
+  createdAt    DateTime      @default(now())
+
+  project  Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy Profile @relation("VersionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  generations Generation[]
+  exports     Export[]
+
+  // Project.currentVersionId からの逆参照（任意）
+  currentOf Project? @relation("ProjectCurrentVersion")
+
+  @@unique([projectId, versionNo])
+  @@index([createdAt(sort: Desc)])
+}
+
+model Generation {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId   String?   @db.Uuid
+  versionId   String?   @db.Uuid
+  status      GenStatus @default(queued)
+  model       String
+  prompt      String?
+  response    String?
+  tokenUsage  Json?     // {prompt, completion, total}
+  costCents   Int?
+  metadata    Json?
+  createdById String?   @db.Uuid
+  createdAt   DateTime  @default(now())
+
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  version   Version? @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  createdBy Profile? @relation("GenerationCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([projectId, createdAt(sort: Desc)])
+}
+
+model Export {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  versionId   String       @db.Uuid
+  type        ExportType
+  status      ExportStatus @default(queued)
+  storagePath String?
+  sizeBytes   BigInt?
+  pageCount   Int?
+  errorText   String?
+  createdById String?      @db.Uuid
+  createdAt   DateTime     @default(now())
+
+  version   Version @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  createdBy Profile? @relation("ExportCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([versionId, createdAt(sort: Desc)])
+}
+
+model Tag {
+  id   BigInt  @id @default(autoincrement())
+  name String  @unique
+
+  projects ProjectTag[]
+}
+
+model ProjectTag {
+  projectId String @db.Uuid
+  tagId     BigInt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, tagId])
+}
