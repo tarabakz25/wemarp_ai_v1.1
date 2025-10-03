@@ -19,10 +19,10 @@ enum Visibility {
   unlisted
 }
 
-enum GetStatus {
+enum GenStatus {
   queued
   running
-  successed
+  succeeded
   failed
 }
 
@@ -39,34 +39,42 @@ enum ExportType {
   md
 }
 
+enum ExportStatus {
+  queued
+  running
+  succeeded
+  failed
+}
 
 model User {
-  id String @id @db.Uuid
-  username String? @unique
+  id          String   @id @db.Uuid
+  username    String?  @unique
   displayName String?
-  avatarUrl String?
-  role UserRole @default(user)
-  createdAt DateTime @default(now())
-  updatedAt Datetime @updatedAt
+  avatarUrl   String?
+  role        Role     @default(user)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  projects Project[]
-  versions Version[] @relation("VersionCreatedBy")
+  projects    Project[]
+  versions    Version[]    @relation("VersionCreatedBy")
   generations Generation[] @relation("GenerationCreatedBy")
-  exports Export[] @relation("ExportCreatedBy")
+  exports     Export[]     @relation("ExportCreatedBy")
 }
 
 model Project {
-  id String @id @db.Uuid
-  title String
-  description String?
-  visibility Visibility @default(private)
-  currentVersionId String? @db.Uuid
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updateAt
+  id               String     @id @db.Uuid
+  title            String
+  description      String?
+  visibility       Visibility @default(private)
+  currentVersionId String?    @unique @db.Uuid
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  ownerId          String     @db.Uuid
 
-  owner Profile @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  versions Version[]
-  tags ProjectTag[]
+  owner       User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  versions    Version[]
+  generations Generation[]
+  tags        ProjectTag[]
 
   currentVersion Version? @relation("ProjectCurrentVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
 
@@ -75,19 +83,19 @@ model Project {
 }
 
 model Version {
-  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  projectId    String        @db.Uuid
-  versionNo    Int
-  status       VersionStatus @default(generated)
-  llmModel     String?
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId      String        @db.Uuid
+  versionNo      Int
+  status         VersionStatus @default(generated)
+  llmModel       String?
   promptSnapshot String?
-  marpMd       String
-  htmlCache    String?
-  createdById  String        @db.Uuid
-  createdAt    DateTime      @default(now())
+  marpMd         String
+  htmlCache      String?
+  createdById    String?       @db.Uuid
+  createdAt      DateTime      @default(now())
 
-  project  Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  createdBy Profile @relation("VersionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy User?   @relation("VersionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
   generations Generation[]
   exports     Export[]
@@ -107,7 +115,7 @@ model Generation {
   model       String
   prompt      String?
   response    String?
-  tokenUsage  Json?     // {prompt, completion, total}
+  tokenUsage  Json? // {prompt, completion, total}
   costCents   Int?
   metadata    Json?
   createdById String?   @db.Uuid
@@ -115,7 +123,7 @@ model Generation {
 
   project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
   version   Version? @relation(fields: [versionId], references: [id], onDelete: Cascade)
-  createdBy Profile? @relation("GenerationCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdBy User?    @relation("GenerationCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([projectId, createdAt(sort: Desc)])
 }
@@ -133,14 +141,14 @@ model Export {
   createdAt   DateTime     @default(now())
 
   version   Version @relation(fields: [versionId], references: [id], onDelete: Cascade)
-  createdBy Profile? @relation("ExportCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdBy User?   @relation("ExportCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([versionId, createdAt(sort: Desc)])
 }
 
 model Tag {
-  id   BigInt  @id @default(autoincrement())
-  name String  @unique
+  id   BigInt @id @default(autoincrement())
+  name String @unique
 
   projects ProjectTag[]
 }
