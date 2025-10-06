@@ -8,7 +8,7 @@ export type GenerateInput = {
 export type GenerateResult = {
   text: string;
   finishReason?: string;
-  provider: "openai" | "anthropic";
+  provider: "openai";
   model: string;
   usage?: Record<string, number | string>;
 }

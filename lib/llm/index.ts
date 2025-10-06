@@ -1,14 +1,13 @@
-import type { LLMClient } from "@/lib/llm/types"; 
-import { env } from "@/lib/env";
+import type { LLMClient } from "@/lib/llm/types";
 import { OpenAIClient } from "@/lib/llm/providers/openai";
 
-let _client: LLMClient | null = null;
+let cachedClient: LLMClient | null = null;
 
-export const getLLMClient(): LLMClient {
-  if (_client) return _client;
-  switch (env.LLM_PROVIDER) {
-    case "openai":
-      _client = new OpenAIClient();
-      break;
-  }
-};
+export function getLLMClient(): LLMClient {
+  if (cachedClient) return cachedClient;
+
+  // Always use OpenAI as the LLM provider
+  cachedClient = new OpenAIClient();
+
+  return cachedClient;
+}

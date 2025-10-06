@@ -38,4 +38,4 @@ export const authOptions = {
   pages: {
     signIn: "/",
   },
-} satisfies Parameter<typeof NextAuth>[0];
+} satisfies Parameters<typeof NextAuth>[0];
